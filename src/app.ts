@@ -2,6 +2,9 @@ import ENV from './env';
 import Database from './orm/database';
 import Server from './server/server';
 
+import ServerController from './server/server_controller';
+import DiscordController from './controllers/discord_controller';
+
 async function main(): Promise<void> {
     console.log('Starting database');
     let database = new Database();
@@ -14,6 +17,26 @@ async function main(): Promise<void> {
         ENV.server !== undefined && ENV.server.assets !== undefined ? ENV.server.assets : 'please supply static path';
     console.log('The following is the asset path: ', assetPath);
     server.static('/assets', assetPath);
+    let controllers: ServerController[] = [new DiscordController()];
+    controllers.forEach((controller, index) => {
+        server.router(controller.route, controller.router);
+    });
+
+    server.app.get('/session', (request, response) => {
+        response.json({
+            success: true,
+            response: {
+                user: (request.session as unknown as { [key: string]: string })['user']
+                    ? (request.session as unknown as { [key: string]: string })['user']
+                    : false,
+                application: (request.session as unknown as { [key: string]: string })['application']
+                    ? (request.session as unknown as { [key: string]: string })['application']
+                    : false,
+            },
+            errors: [],
+        });
+    });
+
     let awaitingPromises: Promise<unknown>[] = [];
 
     // start the server
