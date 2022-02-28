@@ -37,6 +37,12 @@ async function main(): Promise<void> {
         });
     });
 
+    server.app.get('/logout', (request, response) => {
+        request.session.destroy((err) => {
+            response.sendStatus(200);
+        });
+    });
+
     let awaitingPromises: Promise<unknown>[] = [];
 
     // start the server
