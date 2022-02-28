@@ -126,6 +126,11 @@ export class Server {
         this.app.get('/ping', (req, res) => {
             res.sendStatus(200);
         });
+
+        /*
+        this.app.use('/favicon.ico', (req, res) => {
+            res.sendStatus(200);
+        }); */
     }
 
     public static(route: string, path: string) {
@@ -138,6 +143,11 @@ export class Server {
     }
 
     public start(port = 8080) {
+        // on start add this wildcard route to catch anything else
+        this.app.use((req, res) => {
+            res.sendStatus(404);
+        });
+
         this.port = port;
         return new Promise(() => {
             this.app.listen(this.port, () => {

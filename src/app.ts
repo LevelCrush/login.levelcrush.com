@@ -4,6 +4,7 @@ import Server from './server/server';
 
 import ServerController from './server/server_controller';
 import DiscordController from './controllers/discord_controller';
+import * as path from 'path';
 
 async function main(): Promise<void> {
     console.log('Starting database');
@@ -17,6 +18,11 @@ async function main(): Promise<void> {
         ENV.server !== undefined && ENV.server.assets !== undefined ? ENV.server.assets : 'please supply static path';
     console.log('The following is the asset path: ', assetPath);
     server.static('/assets', assetPath);
+    server.static('/robots.txt', path.join(assetPath, 'root', 'robots.txt'));
+    server.static('/robot.txt', path.join(assetPath, 'root', 'robots.txt'));
+
+    server.static('/', path.join(assetPath, 'root'));
+
     let controllers: ServerController[] = [new DiscordController()];
     controllers.forEach((controller, index) => {
         server.router(controller.route, controller.router);
