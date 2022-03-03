@@ -115,13 +115,12 @@ export class DiscordController extends ServerController {
             const firstTime = platformUser === undefined && emailExists === false;
             let allowLogin = false;
             let tokenExists = false;
+            let displayName = userData.username + '#' + userData.discriminator;
             if (firstTime) {
                 let password = crypto
                     .createHash('md5')
                     .update(userData.email + userData.id + userData.username + moment().unix())
                     .digest('hex');
-
-                let displayName = userData.username + '#' + userData.discriminator;
 
                 // need to create platform user + api user
 
@@ -132,8 +131,6 @@ export class DiscordController extends ServerController {
                     passwordConfirm: password,
                     displayName: displayName,
                 });
-
-                console.log(apiUserRequest.data);
 
                 const platformUserData: Partial<Platform> = {
                     user: apiUserRequest.data['response']['user']['token'],
@@ -151,7 +148,6 @@ export class DiscordController extends ServerController {
                     updated_at: 0,
                 };
 
-                console.log(platformUserData);
                 await database.getRepository(Platform).save(platformUserData);
 
                 apiUserToken = apiUserRequest.data['response']['user']['token'];
@@ -185,6 +181,16 @@ export class DiscordController extends ServerController {
 
                     apiUserToken = platformUser.user;
                 }
+            }
+
+            // update user with updated discord information
+            if (allowLogin && platformUser !== undefined) {
+                console.log('Updating display name');
+                await Axios.post(ENV.hosts.api + '/user/update', {
+                    displayName: displayName,
+                    user: platformUser.user,
+                    application: ENV.platforms.api.token,
+                });
             }
 
             // are we allowed to login?
