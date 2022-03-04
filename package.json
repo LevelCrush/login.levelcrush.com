@@ -7,9 +7,10 @@
     "name": ""
   },
   "scripts": {
+    "production" : "node ./dist/app.js",
     "build": "tsc --build",
     "clean": "tsc --build --clean",
-    "debug": "ts-node ./src/app.ts",
+    "debug": "ts-node ./src/app.ts --dev",
     "typeorm": "node --require ts-node/register ./node_modules/typeorm/cli.js"
   },
   "devDependencies": {

@@ -45,6 +45,7 @@ env.ts
 
 ormconfig.json
 ormconfig.ts
+ormconfig.js 
 
 bin/*
 obj/*

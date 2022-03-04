@@ -1,4 +1,4 @@
-export = {
+module.exports = {
 
   "type": "mysql",
   "host": "localhost",
@@ -6,7 +6,7 @@ export = {
   "username": "root",
   "password": "",
   "database": "levelcrush",
-  "synchronize": true,
+  "synchronize": false,
   "logging": false,
   "entities": [
     __dirname + "/orm/entity/**/*.{js,ts}"
