@@ -8,7 +8,9 @@ import Database from '../orm/database';
 import { Session } from '../orm/entity/session';
 import { Repository } from 'typeorm';
 import { TypeormStore } from 'connect-typeorm';
-
+import ENV from '../env';
+import * as https from 'https';
+import * as fs from 'fs';
 // passports
 
 import session = require('express-session');
@@ -41,6 +43,7 @@ export class Server {
     private sessionSettings: ServerSessionSettings;
     private corSettings: ServerCorsSettings;
     private port: number = 8080;
+    private httpsServer: https.Server | undefined;
 
     private readonly defaultCorsSettings: ServerCorsSettings = {
         origins: ['*'],
@@ -66,6 +69,17 @@ export class Server {
 
         // create our express app
         this.app = express();
+        this.port = ENV.server && ENV.server.port !== undefined ? ENV.server.port : 8081;
+        let enableSSL = ENV.server && ENV.server.ssl !== undefined ? true : false;
+        if (ENV.server && ENV.server.ssl !== undefined) {
+            this.httpsServer = https.createServer(
+                {
+                    key: fs.readFileSync(ENV.server.ssl.key),
+                    cert: fs.readFileSync(ENV.server.ssl.cert),
+                },
+                this.app,
+            );
+        }
 
         // store important things in the middleware for use later
         this.app.use((req, res, next) => {
@@ -142,17 +156,22 @@ export class Server {
         this.app.use(route, router);
     }
 
-    public start(port = 8080) {
+    public start() {
         // on start add this wildcard route to catch anything else
         this.app.use((req, res) => {
             res.sendStatus(404);
         });
 
-        this.port = port;
         return new Promise(() => {
-            this.app.listen(this.port, () => {
-                console.log('Now listening on ' + this.port);
-            });
+            if (this.httpsServer !== undefined) {
+                this.httpsServer.listen(this.port, () => {
+                    console.log('Doing something on ' + this.port);
+                });
+            } else {
+                this.app.listen(this.port, () => {
+                    console.log('Now listening on ' + this.port);
+                });
+            }
         });
     }
 }

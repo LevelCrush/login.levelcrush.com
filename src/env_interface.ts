@@ -8,6 +8,10 @@ export interface ENV {
         assets?: string;
         domain?: string;
         url?: string;
+        ssl?: {
+            key: string;
+            cert: string;
+        };
     };
     hosts: {
         api: string;

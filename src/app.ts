@@ -53,7 +53,7 @@ async function main(): Promise<void> {
 
     // start the server
     console.log('Starting server');
-    awaitingPromises.push(server.start(ENV.server?.port));
+    awaitingPromises.push(server.start());
 
     console.log('Starting database auto ping');
     awaitingPromises.push(database.startAutoPing());
