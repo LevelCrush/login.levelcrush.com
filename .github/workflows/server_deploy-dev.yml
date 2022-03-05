@@ -1,6 +1,6 @@
 # This is a basic workflow that is manually triggered
 
-name: Server Deploy
+name: '[Dev] Server Deploy'
 
 # Controls when the action will run. Workflow runs when manually triggered using the UI
 # or API.
@@ -15,21 +15,23 @@ on:
                 default: ''
                 # Input has to be provided for the workflow to run
                 required: false
-
+    push: # auto run on main branch push
+        branches:
+            - dev
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
     # This workflow deploys via ssh to our servers
-    greet:
+    deploy:
         # The type of runner that the job will run on
         runs-on: ubuntu-latest
-
+        if: github.ref == 'refs/heads/dev'
         # Steps represent a sequence of tasks that will be executed as part of the job
         steps:
             # Runs a single command using the runners shell
-            - name: Send greeting
-              run: echo "Hello ${{ github.event.inputs.name }}"
             - name: Checkout
               uses: actions/checkout@v3.0.0
+              with:
+                  ref: dev
             - name: ssh deploy
               # You may pin to the exact commit or the version.
               # uses: easingthemes/ssh-deploy@c711f2c3391cac2876bf4c833590077f02e4bcb8
@@ -46,7 +48,7 @@ jobs:
                   # Source directory
                   #SOURCE: ${{ secrets.SSH_DIR_SOURCE }}  # optional, default is
                   # Target directory
-                  TARGET: ${{ secrets.SSH_DIR_TARGET }} # optional, default is /home/REMOTE_USER/
+                  TARGET: ${{ secrets.SSH_DIR_TARGET_DEV }} # optional, default is /home/REMOTE_USER/
                   # Arguments to pass to rsync
                   #ARGS: -rltgoDzvO # optional, default is -rltgoDzvO
                   # An array of folder to exclude
@@ -58,7 +60,7 @@ jobs:
                   username: ${{ secrets.SSH_REMOTE_USER }}
                   key: ${{ secrets.SSH_PRIVATE_KEY }}
                   script: |
-                      cd ${{ secrets.SSH_DIR_TARGET}}
+                      cd ${{ secrets.SSH_DIR_TARGET_DEV}}
                       npm install
                       npm run build
-                      sudo systemctl restart ${{ secrets.SERVICE_NAME }}.service
+                      sudo systemctl restart ${{ secrets.SERVICE_NAME }}_dev.service

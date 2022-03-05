@@ -1,6 +1,7 @@
 # This is a basic workflow that is manually triggered
 
-name: Server Build
+name: '[Dev] Server Restart'
+
 # Controls when the action will run. Workflow runs when manually triggered using the UI
 # or API.
 on:
@@ -9,7 +10,7 @@ on:
         inputs:
             name:
                 # Friendly description to be shown in the UI instead of 'name'
-                description: 'Deploy to Server'
+                description: 'Restart Server'
                 # Default value if no value is explicitly provided
                 default: ''
                 # Input has to be provided for the workflow to run
@@ -18,15 +19,13 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
     # This workflow deploys via ssh to our servers
-    greet:
+    restarting:
         # The type of runner that the job will run on
         runs-on: ubuntu-latest
-
+        if: github.ref == 'refs/heads/dev'
         # Steps represent a sequence of tasks that will be executed as part of the job
         steps:
             # Runs a single command using the runners shell
-            - name: Send greeting
-              run: echo "Building on server"
             - name: executing remote ssh commands
               uses: appleboy/ssh-action@master
               with:
@@ -34,5 +33,4 @@ jobs:
                   username: ${{ secrets.SSH_REMOTE_USER }}
                   key: ${{ secrets.SSH_PRIVATE_KEY }}
                   script: |
-                      cd ${{ secrets.SSH_DIR_TARGET}}
-                      npm run build
+                      sudo systemctl restart ${{ secrets.SERVICE_NAME }}_dev.service
