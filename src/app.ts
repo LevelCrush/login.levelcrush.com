@@ -5,6 +5,7 @@ import Server from './server/server';
 import ServerController from './server/server_controller';
 import DiscordController from './controllers/discord_controller';
 import * as path from 'path';
+import * as fs from 'fs';
 
 async function main(): Promise<void> {
     console.log('Starting database');
@@ -20,6 +21,21 @@ async function main(): Promise<void> {
     server.static('/assets', assetPath);
     server.static('/robots.txt', path.join(assetPath, 'root', 'robots.txt'));
     server.static('/robot.txt', path.join(assetPath, 'root', 'robots.txt'));
+
+    // get all versioned directories
+    const targetDir = path.join(assetPath, 'widget');
+    const directories = fs.readdirSync(targetDir);
+    directories.reverse();
+    console.log(directories);
+
+    // master route for what version is served  for the widget
+    if (directories.length > 0) {
+        const topDir = directories[0];
+        server.static('/assets/widget/latest/css/main.css', path.join(assetPath, 'widget', topDir, 'css', 'main.css'));
+        server.static('/assets/widget/latest/js/main.js', path.join(assetPath, 'widget', topDir, 'js', 'main.js'));
+    }
+
+    // server.static('/assets/widgets/latest/css/main.css', path.join(assetPath,'widget/'))
 
     server.static('/', path.join(assetPath, 'root'));
 
