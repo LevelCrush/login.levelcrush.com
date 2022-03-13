@@ -30,6 +30,16 @@ export class DiscordController extends ServerController {
     public async getValidate(request: express.Request, response: express.Response) {
         let serverRequest = request as ServerRequest;
 
+        // first make sure we have a valid response
+        if (typeof serverRequest.query['error'] !== 'undefined' || typeof serverRequest.query['code'] === 'undefined') {
+            let redirectUrl = (serverRequest.session as unknown as { [key: string]: string })['oauth_redirect'];
+            if (redirectUrl.length === 0) {
+                redirectUrl = ENV.hosts.frontend;
+            }
+            response.redirect(redirectUrl); // redirect back home
+            return;
+        }
+
         const hostServer =
             ENV.server !== undefined && ENV.server.url !== undefined ? ENV.server.url : request.get('origin');
         const returnRedirect = hostServer + request.originalUrl;
