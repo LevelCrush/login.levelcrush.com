@@ -1,7 +1,8 @@
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 import ENV from './env';
 import Database from './orm/database';
 import Server from './server/server';
-
 import ServerController from './server/server_controller';
 import DiscordController from './controllers/discord_controller';
 import * as path from 'path';

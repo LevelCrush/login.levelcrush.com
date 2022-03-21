@@ -60,16 +60,21 @@ export class DiscordController extends ServerController {
             validateDataArray.push(encodeURIComponent(key) + '=' + encodeURIComponent(validateDataObj[key]));
         }
 
-        let webRequest = await Axios.post(ENV.platforms.discord.oauth.urls.token, validateDataArray.join('&'), {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                Accept: 'application/json',
-            },
-        });
+        let webRequest: AxiosResponse<any, any> | undefined = undefined;
+        try {
+            webRequest = await Axios.post(ENV.platforms.discord.oauth.urls.token, validateDataArray.join('&'), {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    Accept: 'application/json',
+                },
+            });
+        } catch {
+            // todo
+        }
 
         // attempt to parse the response
 
-        if (webRequest.data && typeof webRequest.data['access_token'] !== 'undefined') {
+        if (webRequest !== undefined && webRequest.data && typeof webRequest.data['access_token'] !== 'undefined') {
             console.log(serverRequest.session);
             const oauthRedirect = (serverRequest.session as unknown as { [key: string]: string })[
                 'oauth_redirect'
