@@ -1,36 +1,37 @@
 # This is a basic workflow that is manually triggered
 
-name: '[Production] Server Build'
+name: "[Production] Server Build"
 # Controls when the action will run. Workflow runs when manually triggered using the UI
 # or API.
 on:
-    workflow_dispatch:
-        # Inputs the workflow accepts.
-        inputs:
-            name:
-                # Friendly description to be shown in the UI instead of 'name'
-                description: 'Build install on Server'
-                # Default value if no value is explicitly provided
-                default: ''
-                # Input has to be provided for the workflow to run
-                required: false
+  workflow_dispatch:
+    # Inputs the workflow accepts.
+    inputs:
+      name:
+        # Friendly description to be shown in the UI instead of 'name'
+        description: "Build install on Server"
+        # Default value if no value is explicitly provided
+        default: ""
+        # Input has to be provided for the workflow to run
+        required: false
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-    # This workflow deploys via ssh to our servers
-    build:
-        # The type of runner that the job will run on
-        runs-on: ubuntu-latest
-        if: github.ref == 'refs/heads/main'
+  # This workflow deploys via ssh to our servers
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
 
-        # Steps represent a sequence of tasks that will be executed as part of the job
-        steps:
-            - name: executing remote ssh commands
-              uses: appleboy/ssh-action@master
-              with:
-                  host: ${{ secrets.SSH_REMOTE_HOST }}
-                  username: ${{ secrets.SSH_REMOTE_USER }}
-                  key: ${{ secrets.SSH_PRIVATE_KEY }}
-                  script: |
-                      cd ${{ secrets.SSH_DIR_TARGET}}
-                      npm run build
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: executing remote ssh commands
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_REMOTE_HOST }}
+          username: ${{ secrets.SSH_REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ secrets.SSH_DIR_TARGET}}
+            npm run build
+            npm install
