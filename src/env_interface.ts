@@ -35,6 +35,17 @@ export interface ENV {
                 public_key: string;
             };
         };
+        twitch: {
+            oauth: {
+                urls: {
+                    authorize: string;
+                    token: string;
+                    revoke: string;
+                };
+                client_id: string;
+                client_secret: string;
+            };
+        };
     };
 }
 

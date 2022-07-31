@@ -115,6 +115,7 @@ export class Server {
                     origin = origin !== undefined ? origin : '';
                     let allowAll = this.corSettings.origins[0] === '*';
                     let originAllowed = allowAll || this.corSettings.origins.indexOf(origin) !== -1;
+                    // console.log(this.corSettings, originAllowed);
                     callback(
                         originAllowed ? null : new Error('Domain did not pass CORS'),
                         originAllowed ? true : undefined,

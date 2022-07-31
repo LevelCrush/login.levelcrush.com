@@ -276,11 +276,16 @@ export class DiscordController extends ServerController {
 
         (serverRequest.session as unknown as { [key: string]: string })['oauth_redirect'] = finalRedirect as string;
         serverRequest.session.save((err) => {
-            response.json({
-                success: true,
-                redirect: authorizeUrl,
-                errors: [],
-            });
+            console.log('XHR request? ', serverRequest.xhr);
+            if (serverRequest.xhr) {
+                response.json({
+                    success: true,
+                    redirect: authorizeUrl,
+                    errors: [],
+                });
+            } else {
+                response.redirect(authorizeUrl);
+            }
         });
     }
 }
