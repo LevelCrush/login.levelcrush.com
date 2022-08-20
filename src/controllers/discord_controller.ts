@@ -217,21 +217,21 @@ export class DiscordController extends ServerController {
 
                 serverRequest.session.save((err) => {
                     let redirectUrl = (serverRequest.session as unknown as { [key: string]: string })['oauth_redirect'];
-                    if (redirectUrl.length === 0) {
+                    if (!redirectUrl || redirectUrl.length === 0) {
                         redirectUrl = request.get('origin') as string;
                     }
                     response.redirect(redirectUrl);
                 });
             } else {
                 let redirectUrl = (serverRequest.session as unknown as { [key: string]: string })['oauth_redirect'];
-                if (redirectUrl.length === 0) {
+                if (!redirectUrl || redirectUrl.length === 0) {
                     redirectUrl = request.get('origin') as string;
                 }
                 response.redirect(redirectUrl);
             }
         } else {
             let redirectUrl = (serverRequest.session as unknown as { [key: string]: string })['oauth_redirect'];
-            if (redirectUrl.length === 0) {
+            if (!redirectUrl || redirectUrl.length === 0) {
                 redirectUrl = request.get('origin') as string;
             }
             response.redirect(redirectUrl);
