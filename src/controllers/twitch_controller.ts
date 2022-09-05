@@ -32,6 +32,72 @@ export class TwitchController extends ServerController {
 
         this.router.get('/login', this.getLogin);
         this.router.get('/validate', this.getValidate);
+        this.router.post('/unlink', this.postUnlink);
+    }
+
+    public async postUnlink(request: express.Request, response: express.Response) {
+        let serverRequest = request as ServerRequest;
+        let serverSession = serverRequest.session as any; // ugly, should find a better way to do this
+        const is_logged_in = typeof serverSession['user'] !== 'undefined';
+
+        console.log('IS Logged In: ', is_logged_in);
+        if (is_logged_in) {
+            try {
+                const database = serverRequest.globals.database.raw();
+                const twitchPlatform: { user: string; platform: string; platformUser: string } | undefined =
+                    await database
+                        .createQueryBuilder()
+                        .select([
+                            'platform.user AS user',
+                            'platform.platform AS platform',
+                            'platform.platform_user AS platformUser',
+                        ])
+                        .from('platform', 'platform')
+                        .where('platform.user = :userToken')
+                        .andWhere("platform.platform = 'twitch'")
+                        .setParameter('userToken', serverSession['user'])
+                        .getRawOne();
+
+                console.log('Checking twitch platform result', twitchPlatform);
+
+                if (twitchPlatform) {
+                    console.log('Unlinking Twitch: BEFORE DB CALL');
+                    // we found a linked twitch platform
+                    const platformDeleteQuery = database
+                        .createQueryBuilder()
+                        .delete()
+                        .from('platform', 'platform')
+                        .where("platform.platform = 'twitch'")
+                        .andWhere('platform.user = :userToken')
+                        .setParameter('userToken', serverSession['user'])
+                        .execute();
+
+                    const metadataDeleteQuery = database
+                        .createQueryBuilder()
+                        .delete()
+                        .from('platform_metadata', 'platform_metadata')
+                        .where("platform_metadata.platform = 'twitch'")
+                        .andWhere('platform_metadata.platform_user = :platformUser')
+                        .setParameter('platformUser', twitchPlatform.platformUser)
+                        .execute();
+
+                    // wait for both queries to finish
+                    await Promise.allSettled([platformDeleteQuery, metadataDeleteQuery]);
+                }
+            } catch (err) {
+                // if we fail no worry, this is not mission critical
+                // just silently ignore for now
+                // TODO eventually it would be nice to have better error handling / responses
+
+                console.log('Twitch Unlink Error:', err);
+            }
+        }
+
+        response.json({
+            success: true,
+            response: {},
+            errors: [],
+        });
     }
 
     public async getValidate(request: express.Request, response: express.Response) {

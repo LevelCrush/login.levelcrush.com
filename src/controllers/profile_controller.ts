@@ -40,7 +40,7 @@ export class ProfileController extends ServerController {
             for (let i = 0; i < platforms.length; i++) {
                 const platform = platforms[i];
 
-                const platform_displayname_metadata: { displayName: string } | undefined = await database
+                const platformMetadata: { displayName: string } | undefined = await database
                     .createQueryBuilder()
                     .select(['platform_metadata.value AS displayName'])
                     .from('platform_metadata', 'platform_metadata')
@@ -51,8 +51,8 @@ export class ProfileController extends ServerController {
                     .setParameter('platformUser', platform.platformUser)
                     .getRawOne();
 
-                if (platform_displayname_metadata) {
-                    serverResponse[platform.platform] = platform_displayname_metadata.displayName;
+                if (platformMetadata) {
+                    serverResponse[platform.platform] = platformMetadata.displayName;
                 }
             }
         }
