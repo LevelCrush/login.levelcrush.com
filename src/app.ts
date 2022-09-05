@@ -8,6 +8,7 @@ import DiscordController from './controllers/discord_controller';
 import * as path from 'path';
 import * as fs from 'fs';
 import { TwitchController } from './controllers/twitch_controller';
+import ProfileController from './controllers/profile_controller';
 
 async function main(): Promise<void> {
     console.log('Starting database');
@@ -41,7 +42,7 @@ async function main(): Promise<void> {
 
     server.static('/', path.join(assetPath, 'root'));
 
-    let controllers: ServerController[] = [new DiscordController()];
+    let controllers: ServerController[] = [new DiscordController(), new TwitchController(), new ProfileController()];
 
     //let controllers: ServerController[] = [new DiscordController(), new TwitchController()];
     controllers.forEach((controller, index) => {
