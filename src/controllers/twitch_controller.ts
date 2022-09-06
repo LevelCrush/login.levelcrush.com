@@ -103,8 +103,6 @@ export class TwitchController extends ServerController {
     public async getValidate(request: express.Request, response: express.Response) {
         let serverRequest = request as ServerRequest;
 
-        console.log(serverRequest.query);
-
         // first make sure we have a valid response
         if (typeof serverRequest.query['error'] !== 'undefined' || typeof serverRequest.query['code'] === 'undefined') {
             let redirectUrl = (serverRequest.session as unknown as { [key: string]: string })['oauth_redirect'];
@@ -219,13 +217,6 @@ export class TwitchController extends ServerController {
 
                 await database.getRepository(Platform).save(new_platform);
             }
-
-            (serverRequest.session as any)['twitch'] = {
-                id: userData.id,
-                display_name: userData.display_name,
-                offline_image: userData.offline_image_url,
-                profile_image: userData.profile_image_url,
-            };
 
             try {
                 const metadata = await database.getRepository(PlatformMetadata).findOne({
