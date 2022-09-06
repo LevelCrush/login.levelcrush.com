@@ -9,6 +9,7 @@ import ENV from '../env';
 import Axios, { AxiosResponse } from 'axios';
 import { session } from 'passport';
 import Platform from '../orm/entity/platform';
+import PlatformMetadata from '../orm/entity/platform_metadata';
 
 export interface DiscordUserResponse {
     id: string;
@@ -126,11 +127,79 @@ export class DiscordController extends ServerController {
                 emailExists = emailExistsRequest.response.exists;
             }
 
+            // form our display name
+            let displayName = userData.username + '#' + userData.discriminator;
+
+            // save metadata if possible
+            // update profile
+            try {
+                const metadata = await database.getRepository(PlatformMetadata).findOne({
+                    where: {
+                        platform: 'discord',
+                        platform_user: userData.id,
+                        key: 'profile',
+                    },
+                });
+
+                if (metadata !== undefined) {
+                    // existing, just update
+                    metadata.value = JSON.stringify(userData);
+                    metadata.updated_at = moment().unix();
+                    await database.getRepository(PlatformMetadata).save(metadata);
+                } else {
+                    // update platform metadata
+                    const new_metadata: Partial<PlatformMetadata> = {
+                        platform: 'discord',
+                        platform_user: userData.id,
+                        key: 'profile',
+                        value: JSON.stringify(userData),
+                        created_at: moment().unix(),
+                        updated_at: 0,
+                    };
+                    await database.getRepository(PlatformMetadata).save(new_metadata);
+                }
+            } catch (err) {
+                console.log('An internal error occurred. Failed to save');
+                console.log(err);
+            }
+
+            // update username
+            try {
+                const metadata = await database.getRepository(PlatformMetadata).findOne({
+                    where: {
+                        platform: 'discord',
+                        platform_user: userData.id,
+                        key: 'display_name',
+                    },
+                });
+
+                if (metadata !== undefined) {
+                    // existing, just update
+                    metadata.value = displayName;
+                    metadata.updated_at = moment().unix();
+                    await database.getRepository(PlatformMetadata).save(metadata);
+                } else {
+                    // update platform metadata
+                    const new_metadata: Partial<PlatformMetadata> = {
+                        platform: 'discord',
+                        platform_user: userData.id,
+                        key: 'display_name',
+                        value: displayName,
+                        created_at: moment().unix(),
+                        updated_at: 0,
+                    };
+                    await database.getRepository(PlatformMetadata).save(new_metadata);
+                }
+            } catch (err) {
+                console.log('An internal error occurred. Failed to save');
+                console.log(err);
+            }
+
             // first time logging in with discord with this **discord** account
             const firstTime = platformUser === undefined && emailExists === false;
             let allowLogin = false;
             let tokenExists = false;
-            let displayName = userData.username + '#' + userData.discriminator;
+
             if (firstTime) {
                 let password = crypto
                     .createHash('md5')
@@ -158,7 +227,7 @@ export class DiscordController extends ServerController {
                     access_token: accessToken,
                     refresh_token: refreshToken,
                     expires_at: 0, // need to set this to the actual expires time,
-                    created_at: 0,
+                    created_at: moment().unix(),
                     deleted_at: 0,
                     updated_at: 0,
                 };

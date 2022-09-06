@@ -29,7 +29,7 @@ export class Platform {
 
     @Column({
         type: 'varchar',
-        length: '255',
+        length: '512',
     })
     @Index()
     public platform_user: string;

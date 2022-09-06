@@ -46,6 +46,19 @@ export interface ENV {
                 client_secret: string;
             };
         };
+        bungie: {
+            oauth: {
+                urls: {
+                    authorize: string;
+                    token: string;
+                    revoke: string;
+                    refresh: string;
+                };
+                api_key: string;
+                client_id: string;
+                client_secret: string;
+            };
+        };
     };
 }
 
