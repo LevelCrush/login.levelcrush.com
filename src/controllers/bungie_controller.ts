@@ -1,5 +1,5 @@
 import { ServerController, ServerResponse, ServerResponseError } from '../server/server_controller';
-import { Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { Server, ServerRequest, ServerSession } from '../server/server';
 import * as moment from 'moment';
 import * as express from 'express';
@@ -80,6 +80,12 @@ export class BungieController extends ServerController {
                 console.log('Twitch Unlink Error:', err);
             }
         }
+
+        response.json({
+            success: true,
+            response: {},
+            errors: [],
+        });
     }
 
     public async getValidate(request: express.Request, response: express.Response) {
@@ -169,7 +175,7 @@ export class BungieController extends ServerController {
             const requestTime = moment().unix();
 
             let bungieUserRequest = await Axios.get(
-                'https://www.bungie.net/Platform//User/GetBungieNetUserById/' + encodeURIComponent(membershipID) + '/',
+                'https://www.bungie.net/Platform/User/GetBungieNetUserById/' + encodeURIComponent(membershipID) + '/',
                 {
                     headers: {
                         Authorization: 'Bearer ' + accessToken,
@@ -178,6 +184,19 @@ export class BungieController extends ServerController {
                     },
                 },
             );
+
+            const bungieMembershipRequest = await Axios.get(
+                'https://www.bungie.net/Platform/User/GetMembershipsById/' + encodeURIComponent(membershipID) + '/-1/',
+                {
+                    headers: {
+                        Authorization: 'Bearer ' + accessToken,
+                        'X-API-Key': ENV.platforms.bungie.oauth.api_key,
+                        Accept: 'application/json',
+                    },
+                },
+            );
+
+            const membershipData = bungieMembershipRequest.data.Response;
 
             const userData = bungieUserRequest.data.Response as any; // TODO make this more defined
             const database = serverRequest.globals.database.raw();
@@ -285,6 +304,163 @@ export class BungieController extends ServerController {
                 console.log(err);
             }
 
+            // update PRIMARY MEMBERSHIP
+            // bungie maintains a "true" membership id
+            // most likely this is due to the new cross save system
+            try {
+                const metadata = await database.getRepository(PlatformMetadata).findOne({
+                    where: {
+                        platform: 'bungie',
+                        platform_user: membershipID,
+                        key: 'primary_membership',
+                    },
+                });
+
+                if (metadata !== undefined) {
+                    // existing, just update
+                    metadata.value = membershipData.primaryMembershipId;
+                    metadata.updated_at = moment().unix();
+                    await database.getRepository(PlatformMetadata).save(metadata);
+                } else {
+                    // update platform metadata
+                    const new_metadata: Partial<PlatformMetadata> = {
+                        platform: 'bungie',
+                        platform_user: membershipID,
+                        key: 'primary_membership',
+                        value: membershipData.primaryMembershipId,
+                        created_at: moment().unix(),
+                        updated_at: 0,
+                    };
+                    await database.getRepository(PlatformMetadata).save(new_metadata);
+                }
+            } catch (err) {
+                console.log('An internal error occurred. Failed to save');
+                console.log(err);
+            }
+
+            // membershipData.destinyMemberships
+            // update and store ALL memberships
+            // bungie maintains a "true" membership id
+            // most likely this is due to the new cross save system
+            const memberships_all = JSON.stringify(membershipData.destinyMemberships);
+            try {
+                const metadata = await database.getRepository(PlatformMetadata).findOne({
+                    where: {
+                        platform: 'bungie',
+                        platform_user: membershipID,
+                        key: 'all_memberships',
+                    },
+                });
+
+                if (metadata !== undefined) {
+                    // existing, just update
+                    metadata.value = memberships_all;
+                    metadata.updated_at = moment().unix();
+                    await database.getRepository(PlatformMetadata).save(metadata);
+                } else {
+                    // update platform metadata
+                    const new_metadata: Partial<PlatformMetadata> = {
+                        platform: 'bungie',
+                        platform_user: membershipID,
+                        key: 'all_memberships',
+                        value: memberships_all,
+                        created_at: moment().unix(),
+                        updated_at: 0,
+                    };
+                    await database.getRepository(PlatformMetadata).save(new_metadata);
+                }
+            } catch (err) {
+                console.log('An internal error occurred. Failed to save');
+                console.log(err);
+            }
+
+            // now store raid report link (if possible)
+            let raidreportUrl = '';
+            const memberships: { membershipType: number; membershipId: string }[] = membershipData.destinyMemberships;
+
+            // this is etup by comparing bungie net platform membershiop types
+            // and comparing to raid report platforms
+            // https://bungie-net.github.io/#/components/schemas/BungieMembershipType
+            let raidreportPlatform = 'none';
+            for (let i = 0; i < memberships.length; i++) {
+                const membership = memberships[i];
+                if (membership.membershipId.toString() === membershipData.primaryMembershipId.toString()) {
+                    switch (membership.membershipType) {
+                        case 0:
+                            raidreportPlatform = 'none';
+                            break;
+                        case 1: // verified, xbox
+                            raidreportPlatform = 'xb';
+                            break;
+                        case 2: // verified, playstation
+                            raidreportPlatform = 'ps';
+                            break;
+                        case 3: // verified , steam
+                            raidreportPlatform = 'pc';
+                            break;
+                        case 4: // not verified, blizzard bnet
+                            raidreportPlatform = 'pc';
+                            break;
+                        case 5:
+                            raidreportPlatform = 'pc';
+                            break;
+                        case 6: // unknown platform, not verified
+                            raidreportPlatform = 'pc';
+                            break;
+                        case 10: // bungie says this is TigerDemon. What platform is that? not verified
+                            raidreportPlatform = 'pc';
+                            break;
+                        case 254: // bungie says this is reserved for the next new platform. Not verified. Will never see this in real world
+                            raidreportPlatform = 'pc';
+                            break;
+                        case -1: // bungie says this is reserved for all platforms. only valid for searching. not applicable to this use case. just here for knowledge
+                            raidreportPlatform = 'pc';
+                            break;
+                        default:
+                            raidreportPlatform = 'pc';
+                            break;
+                    }
+                    break;
+                }
+            }
+
+            raidreportUrl =
+                'https://raid.report/' +
+                encodeURIComponent(raidreportPlatform) +
+                '/' +
+                membershipData.primaryMembershipId.toString();
+
+            try {
+                const metadata = await database.getRepository(PlatformMetadata).findOne({
+                    where: {
+                        platform: 'bungie',
+                        platform_user: membershipID,
+                        key: 'raid_report',
+                    },
+                });
+
+                if (metadata !== undefined) {
+                    // existing, just update
+                    metadata.value = raidreportUrl;
+                    metadata.updated_at = moment().unix();
+                    await database.getRepository(PlatformMetadata).save(metadata);
+                } else {
+                    // update platform metadata
+                    const new_metadata: Partial<PlatformMetadata> = {
+                        platform: 'bungie',
+                        platform_user: membershipID,
+                        key: 'raid_report',
+                        value: raidreportUrl,
+                        created_at: moment().unix(),
+                        updated_at: 0,
+                    };
+                    await database.getRepository(PlatformMetadata).save(new_metadata);
+                }
+            } catch (err) {
+                console.log('An internal error occurred. Failed to save');
+                console.log(err);
+            }
+
             // at the end redirect
             serverRequest.session.save((err) => {
                 let redirectUrl = (serverRequest.session as any)['oauth_redirect'];
@@ -302,6 +478,7 @@ export class BungieController extends ServerController {
             response.redirect(redirectUrl);
         }
     }
+
     public async getLogin(request: express.Request, response: express.Response) {
         const serverRequest = request as ServerRequest;
         const timestamp = moment().unix();
