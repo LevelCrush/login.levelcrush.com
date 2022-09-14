@@ -142,10 +142,9 @@ export class Server {
             res.sendStatus(200);
         });
 
-        /*
         this.app.use('/favicon.ico', (req, res) => {
             res.sendStatus(200);
-        }); */
+        });
     }
 
     public static(route: string, path: string) {
